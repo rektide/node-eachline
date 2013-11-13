@@ -20,7 +20,7 @@ function eachline(a,b,c){
 		case "string,function":
 			t.encoding = a;
 			t.ondata = b;
-			return t;
+			break;
 
 		//eachline(stream, ondata);
 		case "object":
@@ -28,7 +28,7 @@ function eachline(a,b,c){
 			t.encoding = "utf8";
 			t.ondata = b;
 			a.pipe(t).pipe(new Dummy());
-			return t;
+			break;
 
 		//eachline(stream, "hex", ondata);
 		case "object,string":           //Readable,string
@@ -36,13 +36,17 @@ function eachline(a,b,c){
 			t.encoding = b;
 			t.ondata = c;
 			a.pipe(t).pipe(new Dummy());
-			return t;
+			break;
+
 		case "":
 			t.encoding = "utf8";
-			return t;
+	}
+	if(!t.encoding){
+		throw new Error("I don't know what you want");
 	}
 
-	throw new Error("I don't know what you want");
+	t.blank = new Buffer(module.exports.blankLineValue!==undefined? module.exports.blankLineValue : "\n", t.encoding);
+	return t;
 };
 
 module.exports = eachline;
@@ -68,6 +72,7 @@ module.exports.in = function(location, cb){
 		return eachline.apply(this, args);
 	}
 }
+module.exports.blankLines = false
 
 
 
@@ -125,6 +130,9 @@ Transformer.prototype._transform = function(chunk, encoding, done) {
 				sigd=true;
 				if(data) {
 					xform.push(data, xform.encoding);
+				}
+				else if(module.exports.blankLines){
+					xform.push(xform.blank, xform.encoding);
 				}
 				next();
 			}
